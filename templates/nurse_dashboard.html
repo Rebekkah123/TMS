@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reception Dashboard - Mercy Smart Hospital</title>
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --text-light: #9ca3af;
+            --border-color: #e5e7eb;
+            --primary-blue: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success-green: #10b981;
+            --success-hover: #059669;
+            --danger-red: #e11d48;
+            --warning-yellow: #f59e0b;
+            --font-family: 'Inter', sans-serif;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --border-radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* --- Header --- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            background-color: var(--primary-blue);
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .header-subtitle {
+            font-weight: 500;
+            color: var(--text-light);
+        }
+
+        .header-center {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #f1f5f9;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .header-center i {
+            font-size: 1rem;
+        }
+        
+        .header-time {
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            margin-top: 0.2rem;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-meta {
+            text-align: right;
+        }
+
+        .user-name {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #dbeafe;
+            color: var(--primary-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        /* --- Main Layout --- */
+        .main-container {
+            display: grid;
+            grid-template-columns: 280px minmax(0, 1fr);
+            gap: 1.5rem;
+            padding: 1.5rem;
+            flex: 1;
+            align-items: start;
+        }
+
+        /* --- Left Column --- */
+        .left-col {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .stat-card.blue-card {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            grid-column: span 1;
+        }
+
+        .stat-title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+        
+        .blue-card .stat-title {
+            color: #bfdbfe;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .blue-card .stat-value {
+            color: white;
+            font-size: 1.4rem;
+        }
+
+        .stat-sub {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .blue-card .stat-sub {
+            color: #dbeafe;
+        }
+
+        .stat-value.orange { color: var(--warning-yellow); }
+        .stat-value.green { color: var(--success-green); }
+
+        .registration-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 1.25rem;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.25rem;
+        }
+        
+        .panel-header i { color: var(--primary-blue); }
+
+        .panel-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            color: var(--text-main);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.65rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-family: var(--font-family);
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+        }
+
+        .btn-generate {
+            width: 100%;
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 0.8rem;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-generate:hover {
+            background: var(--primary-hover);
+        }
+
+        /* --- Right Column (Queue Board) --- */
+        .queue-board {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .board-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .board-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .board-title h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.25rem;
+        }
+
+        .board-title p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .btn-export {
+            background: white;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filters-row {
+            display: grid;
+            grid-template-columns: 2fr 1.5fr 1.5fr;
+            gap: 1rem;
+        }
+
+        .search-wrapper {
+            position: relative;
+        }
+
+        .search-wrapper i {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .search-wrapper input {
+            width: 100%;
+            padding: 0.65rem 0.65rem 0.65rem 2.2rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+        
+        .filter-select {
+            padding: 0.65rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: var(--text-main);
+            background: white;
+        }
+
+        /* --- Table --- */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            padding: 1rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border-color);
+            background: #f9fafb;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        .token-box {
+            background: #f1f5f9;
+            border: 1px solid var(--border-color);
+            padding: 0.4rem;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: inline-block;
+        }
+
+        .patient-name {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .td-contact {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            white-space: pre-line;
+        }
+
+        .doctor-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+        
+        .doctor-room {
+            font-size: 0.75rem;
+            color: var(--primary-blue);
+        }
+
+        .dept-badge {
+            background: #f1f5f9;
+            color: var(--text-muted);
+            padding: 0.3rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border: 1px solid transparent;
+        }
+        
+        .status-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+        }
+
+        .status-completed { border-color: var(--success-green); color: var(--success-green); }
+        .status-completed .status-dot { background: var(--success-green); }
+
+        .status-waiting { border-color: var(--primary-blue); color: var(--primary-blue); background: #eff6ff; }
+        .status-waiting .status-dot { background: var(--primary-blue); }
+
+        .status-near { border-color: var(--warning-yellow); color: var(--warning-yellow); background: #fef3c7; }
+        .status-near .status-dot { background: var(--warning-yellow); }
+
+        .status-called { border-color: var(--danger-red); color: var(--danger-red); background: #ffe4e6; }
+        .status-called .status-dot { background: var(--danger-red); }
+
+        .status-skipped { border-color: var(--text-light); color: var(--text-muted); background: #f3f4f6; }
+        .status-skipped .status-dot { background: var(--text-light); }
+
+        .time-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .action-btn {
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            text-align: center;
+            min-width: 90px;
+        }
+
+        .btn-reopen { background: #f3f4f6; color: var(--text-main); border: 1px solid var(--border-color); }
+        .btn-call { background: var(--danger-red); color: white; }
+        .btn-complete { background: var(--success-green); color: white; }
+        .btn-recall { background: var(--primary-blue); color: white; }
+
+        .board-footer {
+            padding: 1rem 1.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: #f9fafb;
+            border-top: 1px solid var(--border-color);
+            border-bottom-left-radius: var(--border-radius);
+            border-bottom-right-radius: var(--border-radius);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+            <div class="header-title">Mercy Smart Hospital <span class="header-subtitle">Reception Dashboard</span></div>
+        </div>
+        
+        <div class="header-center">
+            <i class="fa-regular fa-calendar"></i>
+            <div>
+                <div>Monday, June 22, 2026</div>
+                <div class="header-time"><i class="fa-regular fa-clock"></i> 02:07:50 PM</div>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <div class="user-meta">
+                <div class="user-name">Sarah Collins</div>
+                <div class="user-role">Duty Desk #1 • Receptionist</div>
+            </div>
+            <div class="avatar">SC</div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        
+        <!-- Left Column -->
+        <div class="left-col">
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-title">Total Today</div>
+                    <div class="stat-value">7</div>
+                    <div class="stat-sub">Registered overall</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Waiting Pool</div>
+                    <div class="stat-value orange">4</div>
+                    <div class="stat-sub" style="color:var(--warning-yellow)">In queue</div>
+                </div>
+                <div class="stat-card blue-card">
+                    <div class="stat-title">Now Serving</div>
+                    <div class="stat-value">GEN-101</div>
+                    <div class="stat-sub">Dr. Amanda Ross</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Completed</div>
+                    <div class="stat-value green">2</div>
+                    <div class="stat-sub" style="color:var(--success-green)">Finished today</div>
+                </div>
+            </div>
+
+            <div class="registration-panel">
+                <div class="panel-header">
+                    <i class="fa-regular fa-user"></i> Patient Registration
+                </div>
+                <div class="panel-desc">Register patient and generate token</div>
+
+                <form onsubmit="handleRegistration(event)">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" class="form-control" placeholder="e.g. John Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Mobile Number</label>
+                        <input type="text" class="form-control" placeholder="+1 (555) 000-0000" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Department</label>
+                        <select class="form-control" required>
+                            <option value="">-- Choose Department --</option>
+                            <option>Orthopedics</option>
+                            <option>Dermatology</option>
+                            <option>Cardiology</option>
+                            <option>Pediatrics</option>
+                            <option>General Medicine</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Doctor</label>
+                        <select class="form-control" required>
+                            <option value="">-- Select department first --</option>
+                            <option>Dr. James Mercer</option>
+                            <option>Dr. Clara Vance</option>
+                            <option>Dr. Helen Vance</option>
+                            <option>Dr. Sarah Patel</option>
+                            <option>Dr. Amanda Ross</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn-generate">
+                        <i class="fa-solid fa-plus"></i> GENERATE TOKEN
+                    </button>
+                </form>
+            </div>
+
+        </div>
+
+        <!-- Right Column -->
+        <div class="queue-board">
+            <div class="board-header">
+                <div class="board-header-top">
+                    <div class="board-title">
+                        <h2>Hospital Queue Board</h2>
+                        <p>Live operation panel • Click headings to sort</p>
+                    </div>
+                    <button class="btn-export" onclick="exportData()"><i class="fa-solid fa-download"></i> Export CSV Report</button>
+                </div>
+                
+                <div class="filters-row">
+                    <div class="search-wrapper">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" placeholder="Search patient, token, or phone...">
+                    </div>
+                    <select class="filter-select">
+                        <option><i class="fa-solid fa-filter"></i> All Consultants (All Doctors)</option>
+                    </select>
+                    <select class="filter-select">
+                        <option><i class="fa-solid fa-filter"></i> All Token Statuses</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Token No</th>
+                            <th>Patient Details</th>
+                            <th>Contact</th>
+                            <th>Doctor</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th>Created At <i class="fa-solid fa-caret-up" style="color:var(--primary-blue)"></i></th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Row 1 -->
+                        <tr>
+                            <td><div class="token-box">ORTHO-<br>101</div></td>
+                            <td><div class="patient-name">Sarah<br>Jenkins</div></td>
+                            <td class="td-contact">(555)<br>456-<br>7890</td>
+                            <td>
+                                <div class="doctor-name">Dr. James<br>Mercer</div>
+                                <div class="doctor-room">Room 204</div>
+                            </td>
+                            <td><span class="dept-badge">Orthopedics</span></td>
+                            <td><div class="status-pill status-completed"><div class="status-dot"></div> Completed</div></td>
+                            <td class="time-text">8:30 AM</td>
+                            <td><button class="action-btn btn-reopen" onclick="actionClicked('Re-open')">Re-open</button></td>
+                        </tr>
+
+                        <!-- Row 2 -->
+                        <tr>
+                            <td><div class="token-box">DERM-<br>101</div></td>
+                            <td><div class="patient-name">Robert<br>Vance</div></td>
+                            <td class="td-contact">(555)<br>567-<br>8901</td>
+                            <td>
+                                <div class="doctor-name">Dr. Clara<br>Vance</div>
+                                <div class="doctor-room">Room 401</div>
+                            </td>
+                            <td><span class="dept-badge">Dermatology</span></td>
+                            <td><div class="status-pill status-completed"><div class="status-dot"></div> Completed</div></td>
+                            <td class="time-text">8:45 AM</td>
+                            <td><button class="action-btn btn-reopen" onclick="actionClicked('Re-open')">Re-open</button></td>
+                        </tr>
+
+                        <!-- Row 3 -->
+                        <tr>
+                            <td><div class="token-box">CARD-<br>101</div></td>
+                            <td><div class="patient-name">Arthur<br>Pendleton</div></td>
+                            <td class="td-contact">(555)<br>234-<br>5678</td>
+                            <td>
+                                <div class="doctor-name">Dr. Helen<br>Vance</div>
+                                <div class="doctor-room">Room 302</div>
+                            </td>
+                            <td><span class="dept-badge">Cardiology</span></td>
+                            <td><div class="status-pill status-waiting"><div class="status-dot"></div> Waiting</div></td>
+                            <td class="time-text">9:15 AM</td>
+                            <td><button class="action-btn btn-call" onclick="actionClicked('Call Patient')">Call<br>Patient</button></td>
+                        </tr>
+
+                        <!-- Row 4 -->
+                        <tr>
+                            <td><div class="token-box">PEDI-<br>101</div></td>
+                            <td><div class="patient-name">Liam<br>Sterling</div></td>
+                            <td class="td-contact">(555)<br>876-<br>5432</td>
+                            <td>
+                                <div class="doctor-name">Dr. Sarah<br>Patel</div>
+                                <div class="doctor-room">Room 110</div>
+                            </td>
+                            <td><span class="dept-badge">Pediatrics</span></td>
+                            <td><div class="status-pill status-near"><div class="status-dot"></div> Near Turn</div></td>
+                            <td class="time-text">9:45 AM</td>
+                            <td><button class="action-btn btn-call" onclick="actionClicked('Call Patient')">Call<br>Patient</button></td>
+                        </tr>
+
+                        <!-- Row 5 -->
+                        <tr>
+                            <td><div class="token-box">GEN-<br>101</div></td>
+                            <td><div class="patient-name">Marcus<br>Fletcher</div></td>
+                            <td class="td-contact">(555)<br>345-<br>6789</td>
+                            <td>
+                                <div class="doctor-name">Dr. Amanda<br>Ross</div>
+                                <div class="doctor-room">Room 101</div>
+                            </td>
+                            <td><span class="dept-badge">General<br>Medicine</span></td>
+                            <td><div class="status-pill status-called"><div class="status-dot"></div> Called</div></td>
+                            <td class="time-text">10:10 AM</td>
+                            <td><button class="action-btn btn-complete" onclick="actionClicked('Complete Trip')">Complete<br>Trip</button></td>
+                        </tr>
+
+                        <!-- Row 6 -->
+                        <tr>
+                            <td><div class="token-box" style="color:var(--text-light)">GEN-<br>102</div></td>
+                            <td><div class="patient-name">Cynthia<br>Alvarez</div></td>
+                            <td class="td-contact">(555)<br>678-<br>9012</td>
+                            <td>
+                                <div class="doctor-name" style="color:var(--text-muted)">Dr. Amanda<br>Ross</div>
+                                <div class="doctor-room" style="color:var(--text-light)">Room 101</div>
+                            </td>
+                            <td><span class="dept-badge">General<br>Medicine</span></td>
+                            <td><div class="status-pill status-skipped"><div class="status-dot"></div> Skipped</div></td>
+                            <td class="time-text">10:30 AM</td>
+                            <td><button class="action-btn btn-recall" onclick="actionClicked('Recall')">Recall</button></td>
+                        </tr>
+
+                        <!-- Row 7 -->
+                        <tr>
+                            <td><div class="token-box">CARD-<br>102</div></td>
+                            <td><div class="patient-name">Eleanor<br>Vance</div></td>
+                            <td class="td-contact">(555)<br>789-<br>0123</td>
+                            <td>
+                                <div class="doctor-name">Dr. Helen<br>Vance</div>
+                                <div class="doctor-room">Room 302</div>
+                            </td>
+                            <td><span class="dept-badge">Cardiology</span></td>
+                            <td><div class="status-pill status-waiting"><div class="status-dot"></div> Waiting</div></td>
+                            <td class="time-text">11:15 AM</td>
+                            <td><button class="action-btn btn-call" onclick="actionClicked('Call Patient')">Call<br>Patient</button></td>
+                        </tr>
+
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="board-footer">
+                Total: <strong>7</strong> of <strong>7</strong> patient tokens listed
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Frontend Logic -->
+    <script>
+        function handleRegistration(e) {
+            e.preventDefault();
+            alert("Token Generated! Form details would be sent to the backend.");
+            e.target.reset();
+        }
+
+        function exportData() {
+            alert("Exporting CSV Report...");
+        }
+
+        function actionClicked(actionName) {
+            alert(actionName + " action triggered for this token.");
+        }
+    </script>
+</body>
+</html>
