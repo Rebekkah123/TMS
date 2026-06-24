@@ -17,11 +17,15 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.views.generic import TemplateView
+from tokens import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('register/', TemplateView.as_view(template_name='register.html'), name='register'),
-    path('login/', TemplateView.as_view(template_name='login.html'), name='login'),
-    path('doctor-dashboard/', TemplateView.as_view(template_name='doctor_dashboard.html'), name='doctor_dashboard'),
-    path('nurse-dashboard/', TemplateView.as_view(template_name='nurse_dashboard.html'), name='nurse_dashboard'),
+    path('register/', views.register_user, name='register'),
+    path('login/', views.login_user, name='login'),
+    path('logout/', views.logout_user, name='logout'),
+    path('doctor-dashboard/', views.doctor_dashboard, name='doctor_dashboard'),
+    path('nurse-dashboard/', views.nurse_dashboard, name='nurse_dashboard'),
+    path('nurse-dashboard/call/<int:token_id>/', views.call_patient, name='call_patient'),
+    path('nurse-dashboard/complete/<int:token_id>/', views.complete_trip, name='complete_trip'),
 ]

@@ -779,14 +779,17 @@
         <div class="header-right">
             <div class="user-info">
                 <div class="user-name">
-                    <i class="fa-regular fa-user"></i> Dr. Sarah Al-Khalili <i class="fa-solid fa-chevron-down" style="font-size:0.7rem;"></i>
+                    <i class="fa-regular fa-user"></i> {{ request.user.first_name|default:request.user.username }}
                 </div>
-                <div class="user-clinic">Cardiology Clinic • Consulting Room 4</div>
+                <div class="user-clinic">
+                    {{ request.user.profile.department|title }} Clinic • 
+                    <a href="{% url 'logout' %}" style="color: var(--danger-red); text-decoration: none; font-weight: 600;">Logout</a>
+                </div>
             </div>
             <div class="session-status">
                 <div class="session-label">Session Status</div>
                 <div class="status-badge">
-                    <div class="status-dot"></div> ACTIVE <i class="fa-solid fa-chevron-down" style="font-size:0.7rem;"></i>
+                    <div class="status-dot"></div> ACTIVE
                 </div>
             </div>
         </div>
@@ -802,7 +805,7 @@
                     <span><i class="fa-solid fa-users"></i> Waiting List</span>
                     <span class="badge-small badge-blue">ACTIVE</span>
                 </div>
-                <div class="stat-value">6 <span class="stat-unit">Patients</span></div>
+                <div class="stat-value">{{ waiting_count }} <span class="stat-unit">Patients</span></div>
                 <div class="stat-progress"><div class="progress-bar prog-blue"></div></div>
             </div>
             <div class="stat-card">
@@ -810,7 +813,7 @@
                     <span><i class="fa-regular fa-circle-check"></i> Completed</span>
                     <span class="badge-small badge-green">RELEASED</span>
                 </div>
-                <div class="stat-value">4 <span class="stat-unit">Cases</span></div>
+                <div class="stat-value">{{ completed_count }} <span class="stat-unit">Cases</span></div>
                 <div class="stat-progress"><div class="progress-bar prog-green"></div></div>
             </div>
             <div class="stat-card">
@@ -818,7 +821,7 @@
                     <span><i class="fa-solid fa-triangle-exclamation" style="color:var(--warning-yellow)"></i> Skipped / Hold</span>
                     <span class="badge-small badge-yellow">ON-HOLD</span>
                 </div>
-                <div class="stat-value">0 <span class="stat-unit">Pending</span></div>
+                <div class="stat-value">{{ skipped_count }} <span class="stat-unit">Pending</span></div>
                 <div class="stat-progress"><div class="progress-bar prog-yellow"></div></div>
             </div>
             <div class="stat-card">
@@ -826,7 +829,7 @@
                     <span><i class="fa-regular fa-clock"></i> Avg Wait Time</span>
                     <span class="badge-small badge-green" style="background:#dcfce7;">↘ -12%</span>
                 </div>
-                <div class="stat-value">14 <span class="stat-unit">Mins</span></div>
+                <div class="stat-value">{{ avg_wait_mins }} <span class="stat-unit">Mins</span></div>
                 <div class="stat-progress"><div class="progress-bar prog-purple"></div></div>
             </div>
         </div>
@@ -843,20 +846,20 @@
 
                 <div class="current-token-display">
                     <div class="current-token-label">Current Token</div>
-                    <div class="current-token-number" id="currentTokenDisplay">24</div>
-                    <div class="next-preview">NEXT PREVIEW: <strong>25</strong></div>
+                    <div class="current-token-number" id="currentTokenDisplay">{% if current_token %}{{ current_token.token_number }}{% else %}--{% endif %}</div>
+                    <div class="next-preview">NEXT PREVIEW: <strong>{% if next_token %}{{ next_token.token_number }}{% else %}--{% endif %}</strong></div>
                 </div>
 
                 <div class="active-patient-card">
                     <div class="patient-level">
-                        <span>Level 3 - Elderly / Special Care</span>
-                        <span class="token">Token #24</span>
+                        <span>Normal / Standard</span>
+                        <span class="token">Token #{% if current_token %}{{ current_token.token_number }}{% else %}--{% endif %}</span>
                     </div>
-                    <div class="patient-name-large">Elijah Jackson</div>
-                    <div class="patient-demographics">Other • 48 yrs • Inflow 09:24 AM</div>
+                    <div class="patient-name-large">{% if current_token %}{{ current_token.patient.full_name }}{% else %}No active patient{% endif %}</div>
+                    <div class="patient-demographics">{% if current_token %}{{ current_token.patient.mobile_number }} • Inflow {{ current_token.created_at|date:"h:i A" }}{% endif %}</div>
                     
                     <div class="chief-diagnosis-label">Chief Diagnosis / Discomfort</div>
-                    <div class="chief-diagnosis">Hypertension Follow-up</div>
+                    <div class="chief-diagnosis">{% if current_token %}{{ current_token.department }}{% else %}No active diagnosis{% endif %}</div>
                 </div>
 
                 <div class="alert-status">
@@ -891,102 +894,43 @@
                 </div>
 
                 <div class="queue-tabs">
-                    <button class="tab-btn active" onclick="switchTab(this)">ALL (11)</button>
-                    <button class="tab-btn" onclick="switchTab(this)">WAIT (6)</button>
-                    <button class="tab-btn" onclick="switchTab(this)">DONE (4)</button>
-                    <button class="tab-btn" onclick="switchTab(this)">SKIP (0)</button>
+                    <button class="tab-btn active" onclick="switchTab(this)">ALL ({{ total_count }})</button>
+                    <button class="tab-btn" onclick="switchTab(this)">WAIT ({{ waiting_count }})</button>
+                    <button class="tab-btn" onclick="switchTab(this)">DONE ({{ completed_count }})</button>
+                    <button class="tab-btn" onclick="switchTab(this)">SKIP ({{ skipped_count }})</button>
                 </div>
 
                 <div class="queue-list">
-                    <!-- Row 1 -->
-                    <div class="patient-row">
+                    {% for token in tokens %}
+                    <div class="patient-row {% if token.status == 'COMPLETED' or token.status == 'SKIPPED' %}faded{% endif %}">
                         <div class="token-circle">
-                            <span>TK</span>
-                            <strong>20</strong>
+                            <span>{{ token.token_prefix }}</span>
+                            <strong>{{ token.token_number }}</strong>
                         </div>
                         <div class="patient-row-details">
                             <div class="patient-row-header">
-                                <span class="patient-row-name">Arjun Sharma</span>
-                                <span class="patient-row-demo">(Male, 38yrs)</span>
+                                <span class="patient-row-name">{{ token.patient.full_name }}</span>
+                                <span class="patient-row-demo">({{ token.patient.mobile_number }})</span>
                                 <span class="tag tag-normal">NORMAL</span>
                             </div>
                             <div class="patient-row-diagnosis">
-                                <span>Diagnosis:</span> Routine Post-Stent Evaluation
+                                <span>Department:</span> {{ token.department }}
                             </div>
                             <div class="patient-row-meta">
-                                <span>CHECK-IN: 08:00 AM</span>
-                                <span>CALLED: <span class="meta-value">08:03 AM</span></span>
-                                <span>PERIOD: <span class="meta-value green">14M</span></span>
+                                <span>CHECK-IN: {{ token.created_at|date:"h:i A" }}</span>
+                                <span>CALLED: <span class="meta-value">{% if token.called_at %}{{ token.called_at|date:"h:i A" }}{% else %}--{% endif %}</span></span>
+                                <span>PERIOD: <span class="meta-value green">{% if token.completed_at %}{{ token.wait_duration_minutes }}M{% else %}--{% endif %}</span></span>
                             </div>
                         </div>
-                        <div class="patient-status status-completed">COMPLETED</div>
-                    </div>
-
-                    <!-- Row 2 -->
-                    <div class="patient-row">
-                        <div class="token-circle">
-                            <span>TK</span>
-                            <strong>21</strong>
-                        </div>
-                        <div class="patient-row-details">
-                            <div class="patient-row-header">
-                                <span class="patient-row-name">Liam O'Connor</span>
-                                <span class="patient-row-demo">(Female, 69yrs)</span>
-                                <span class="tag tag-senior">SENIOR CARE</span>
-                            </div>
-                            <div class="patient-row-diagnosis">
-                                <span>Diagnosis:</span> Routine Post-Stent Evaluation
-                            </div>
-                            <div class="patient-row-meta">
-                                <span>CHECK-IN: 08:23 AM</span>
-                                <span>CALLED: <span class="meta-value">08:31 AM</span></span>
-                                <span>PERIOD: <span class="meta-value green">16M</span></span>
-                            </div>
-                        </div>
-                        <div class="patient-status status-completed">COMPLETED</div>
-                    </div>
-
-                    <!-- Row 3 -->
-                    <div class="patient-row">
-                        <div class="token-circle">
-                            <span>TK</span>
-                            <strong>22</strong>
-                        </div>
-                        <div class="patient-row-details">
-                            <div class="patient-row-header">
-                                <span class="patient-row-name">Maria Rodriguez</span>
-                                <span class="patient-row-demo">(Female, 68yrs)</span>
-                                <span class="tag tag-senior">SENIOR CARE</span>
-                            </div>
-                            <div class="patient-row-diagnosis">
-                                <span>Diagnosis:</span> Irregular Heartbeat sensation
-                            </div>
-                            <div class="patient-row-meta">
-                                <span>CHECK-IN: 08:45 AM</span>
-                                <span>CALLED: <span class="meta-value">09:08 AM</span></span>
-                                <span>PERIOD: <span class="meta-value green">16M</span></span>
-                            </div>
-                        </div>
-                        <div class="patient-status status-completed">COMPLETED</div>
-                    </div>
-
-                    <!-- Row 4 Faded -->
-                    <div class="patient-row faded">
-                        <div class="token-circle">
-                            <span>TK</span>
-                            <strong>23</strong>
-                        </div>
-                        <div class="patient-row-details">
-                            <div class="patient-row-header">
-                                <span class="patient-row-name">Yuki Tanaka</span>
-                                <span class="patient-row-demo">(Male, 33yrs)</span>
-                                <span class="tag tag-urgent">URGENT</span>
-                            </div>
-                            <div class="patient-row-diagnosis" style="margin-bottom:0; color:var(--text-muted);">
-                                <i>Waiting for call...</i>
-                            </div>
+                        <div class="patient-status {% if token.status == 'COMPLETED' %}status-completed{% elif token.status == 'WAITING' %}status-waiting{% elif token.status == 'NEAR_TURN' %}status-near{% elif token.status == 'CALLED' %}status-called{% else %}status-skipped{% endif %}">
+                            {{ token.status }}
                         </div>
                     </div>
+                    {% empty %}
+                    <div style="text-align: center; padding: 2rem; color: var(--text-light)">
+                        No patient tokens registered today.
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
 

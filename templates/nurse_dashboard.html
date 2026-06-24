@@ -531,10 +531,13 @@
 
         <div class="header-right">
             <div class="user-meta">
-                <div class="user-name">Sarah Collins</div>
-                <div class="user-role">Duty Desk #1 • Receptionist</div>
+                <div class="user-name">{{ request.user.first_name|default:request.user.username }}</div>
+                <div class="user-role">
+                    {{ request.user.profile.role|title }} • 
+                    <a href="{% url 'logout' %}" style="color: var(--danger-red); text-decoration: none; font-weight: 600;">Logout</a>
+                </div>
             </div>
-            <div class="avatar">SC</div>
+            <div class="avatar">{{ request.user.first_name|slice:":1"|upper|default:request.user.username|slice:":1"|upper }}</div>
         </div>
     </header>
 
@@ -547,22 +550,22 @@
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-title">Total Today</div>
-                    <div class="stat-value">7</div>
+                    <div class="stat-value">{{ total_count }}</div>
                     <div class="stat-sub">Registered overall</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-title">Waiting Pool</div>
-                    <div class="stat-value orange">4</div>
+                    <div class="stat-value orange">{{ waiting_count }}</div>
                     <div class="stat-sub" style="color:var(--warning-yellow)">In queue</div>
                 </div>
                 <div class="stat-card blue-card">
                     <div class="stat-title">Now Serving</div>
-                    <div class="stat-value">GEN-101</div>
-                    <div class="stat-sub">Dr. Amanda Ross</div>
+                    <div class="stat-value">{% if now_serving %}{{ now_serving.formatted_token }}{% else %}--{% endif %}</div>
+                    <div class="stat-sub">{% if now_serving %}{{ now_serving.doctor_name }}{% else %}No patient currently{% endif %}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-title">Completed</div>
-                    <div class="stat-value green">2</div>
+                    <div class="stat-value green">{{ completed_count }}</div>
                     <div class="stat-sub" style="color:var(--success-green)">Finished today</div>
                 </div>
             </div>
@@ -573,30 +576,38 @@
                 </div>
                 <div class="panel-desc">Register patient and generate token</div>
 
-                <form onsubmit="handleRegistration(event)">
+                <form method="POST" action="{% url 'nurse_dashboard' %}">
+                    {% csrf_token %}
                     <div class="form-group">
                         <label>Full Name</label>
-                        <input type="text" class="form-control" placeholder="e.g. John Doe" required>
+                        <input type="text" name="full_name" class="form-control" placeholder="e.g. John Doe" required>
                     </div>
                     <div class="form-group">
                         <label>Mobile Number</label>
-                        <input type="text" class="form-control" placeholder="+1 (555) 000-0000" required>
+                        <input type="text" name="mobile_number" class="form-control" placeholder="+1 (555) 000-0000" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" name="email" class="form-control" placeholder="name@example.com">
                     </div>
                     <div class="form-group">
                         <label>Department</label>
-                        <select class="form-control" required>
+                        <select name="department" class="form-control" required>
                             <option value="">-- Choose Department --</option>
-                            <option>Orthopedics</option>
-                            <option>Dermatology</option>
-                            <option>Cardiology</option>
-                            <option>Pediatrics</option>
-                            <option>General Medicine</option>
+                            <option value="General Medicine">General Medicine</option>
+                            <option value="Cardiology">Cardiology</option>
+                            <option value="Neurology">Neurology</option>
+                            <option value="Pediatrics">Pediatrics</option>
+                            <option value="Orthopedics">Orthopedics</option>
+                            <option value="Dermatology">Dermatology</option>
+                            <option value="Emergency">Emergency</option>
+                            <option value="Surgery">Surgery</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label>Doctor</label>
-                        <select class="form-control" required>
-                            <option value="">-- Select department first --</option>
+                        <select name="doctor_name" class="form-control" required>
+                            <option value="">-- Select Doctor --</option>
                             <option>Dr. James Mercer</option>
                             <option>Dr. Clara Vance</option>
                             <option>Dr. Helen Vance</option>
@@ -653,117 +664,64 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Row 1 -->
+                        {% for token in tokens %}
                         <tr>
-                            <td><div class="token-box">ORTHO-<br>101</div></td>
-                            <td><div class="patient-name">Sarah<br>Jenkins</div></td>
-                            <td class="td-contact">(555)<br>456-<br>7890</td>
-                            <td>
-                                <div class="doctor-name">Dr. James<br>Mercer</div>
-                                <div class="doctor-room">Room 204</div>
+                            <td><div class="token-box">{{ token.token_prefix }}<br>{{ token.token_number }}</div></td>
+                            <td><div class="patient-name">{{ token.patient.full_name }}</div></td>
+                            <td class="td-contact">
+                                {{ token.patient.mobile_number }}
+                                {% if token.patient.email %}
+                                <br>{{ token.patient.email }}
+                                {% endif %}
                             </td>
-                            <td><span class="dept-badge">Orthopedics</span></td>
-                            <td><div class="status-pill status-completed"><div class="status-dot"></div> Completed</div></td>
-                            <td class="time-text">8:30 AM</td>
-                            <td><button class="action-btn btn-reopen" onclick="actionClicked('Re-open')">Re-open</button></td>
-                        </tr>
-
-                        <!-- Row 2 -->
-                        <tr>
-                            <td><div class="token-box">DERM-<br>101</div></td>
-                            <td><div class="patient-name">Robert<br>Vance</div></td>
-                            <td class="td-contact">(555)<br>567-<br>8901</td>
                             <td>
-                                <div class="doctor-name">Dr. Clara<br>Vance</div>
-                                <div class="doctor-room">Room 401</div>
-                            </td>
-                            <td><span class="dept-badge">Dermatology</span></td>
-                            <td><div class="status-pill status-completed"><div class="status-dot"></div> Completed</div></td>
-                            <td class="time-text">8:45 AM</td>
-                            <td><button class="action-btn btn-reopen" onclick="actionClicked('Re-open')">Re-open</button></td>
-                        </tr>
-
-                        <!-- Row 3 -->
-                        <tr>
-                            <td><div class="token-box">CARD-<br>101</div></td>
-                            <td><div class="patient-name">Arthur<br>Pendleton</div></td>
-                            <td class="td-contact">(555)<br>234-<br>5678</td>
-                            <td>
-                                <div class="doctor-name">Dr. Helen<br>Vance</div>
-                                <div class="doctor-room">Room 302</div>
-                            </td>
-                            <td><span class="dept-badge">Cardiology</span></td>
-                            <td><div class="status-pill status-waiting"><div class="status-dot"></div> Waiting</div></td>
-                            <td class="time-text">9:15 AM</td>
-                            <td><button class="action-btn btn-call" onclick="actionClicked('Call Patient')">Call<br>Patient</button></td>
-                        </tr>
-
-                        <!-- Row 4 -->
-                        <tr>
-                            <td><div class="token-box">PEDI-<br>101</div></td>
-                            <td><div class="patient-name">Liam<br>Sterling</div></td>
-                            <td class="td-contact">(555)<br>876-<br>5432</td>
-                            <td>
-                                <div class="doctor-name">Dr. Sarah<br>Patel</div>
-                                <div class="doctor-room">Room 110</div>
-                            </td>
-                            <td><span class="dept-badge">Pediatrics</span></td>
-                            <td><div class="status-pill status-near"><div class="status-dot"></div> Near Turn</div></td>
-                            <td class="time-text">9:45 AM</td>
-                            <td><button class="action-btn btn-call" onclick="actionClicked('Call Patient')">Call<br>Patient</button></td>
-                        </tr>
-
-                        <!-- Row 5 -->
-                        <tr>
-                            <td><div class="token-box">GEN-<br>101</div></td>
-                            <td><div class="patient-name">Marcus<br>Fletcher</div></td>
-                            <td class="td-contact">(555)<br>345-<br>6789</td>
-                            <td>
-                                <div class="doctor-name">Dr. Amanda<br>Ross</div>
+                                <div class="doctor-name">{{ token.doctor_name }}</div>
                                 <div class="doctor-room">Room 101</div>
                             </td>
-                            <td><span class="dept-badge">General<br>Medicine</span></td>
-                            <td><div class="status-pill status-called"><div class="status-dot"></div> Called</div></td>
-                            <td class="time-text">10:10 AM</td>
-                            <td><button class="action-btn btn-complete" onclick="actionClicked('Complete Trip')">Complete<br>Trip</button></td>
-                        </tr>
-
-                        <!-- Row 6 -->
-                        <tr>
-                            <td><div class="token-box" style="color:var(--text-light)">GEN-<br>102</div></td>
-                            <td><div class="patient-name">Cynthia<br>Alvarez</div></td>
-                            <td class="td-contact">(555)<br>678-<br>9012</td>
+                            <td><span class="dept-badge">{{ token.department }}</span></td>
                             <td>
-                                <div class="doctor-name" style="color:var(--text-muted)">Dr. Amanda<br>Ross</div>
-                                <div class="doctor-room" style="color:var(--text-light)">Room 101</div>
+                                {% if token.status == 'WAITING' %}
+                                <div class="status-pill status-waiting"><div class="status-dot"></div> Waiting</div>
+                                {% elif token.status == 'NEAR_TURN' %}
+                                <div class="status-pill status-near"><div class="status-dot"></div> Near Turn</div>
+                                {% elif token.status == 'CALLED' %}
+                                <div class="status-pill status-called"><div class="status-dot"></div> Called</div>
+                                {% elif token.status == 'COMPLETED' %}
+                                <div class="status-pill status-completed"><div class="status-dot"></div> Completed</div>
+                                {% elif token.status == 'SKIPPED' %}
+                                <div class="status-pill status-skipped"><div class="status-dot"></div> Skipped</div>
+                                {% endif %}
                             </td>
-                            <td><span class="dept-badge">General<br>Medicine</span></td>
-                            <td><div class="status-pill status-skipped"><div class="status-dot"></div> Skipped</div></td>
-                            <td class="time-text">10:30 AM</td>
-                            <td><button class="action-btn btn-recall" onclick="actionClicked('Recall')">Recall</button></td>
-                        </tr>
-
-                        <!-- Row 7 -->
-                        <tr>
-                            <td><div class="token-box">CARD-<br>102</div></td>
-                            <td><div class="patient-name">Eleanor<br>Vance</div></td>
-                            <td class="td-contact">(555)<br>789-<br>0123</td>
+                            <td class="time-text">{{ token.created_at|date:"h:i A" }}</td>
                             <td>
-                                <div class="doctor-name">Dr. Helen<br>Vance</div>
-                                <div class="doctor-room">Room 302</div>
+                                {% if token.status == 'COMPLETED' %}
+                                <button class="action-btn btn-reopen" onclick="actionClicked('Re-open')">Re-open</button>
+                                {% elif token.status == 'WAITING' or token.status == 'NEAR_TURN' %}
+                                <form method="POST" action="{% url 'call_patient' token.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="action-btn btn-call">Call<br>Patient</button>
+                                </form>
+                                {% elif token.status == 'CALLED' %}
+                                <form method="POST" action="{% url 'complete_trip' token.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="action-btn btn-complete">Complete<br>Trip</button>
+                                </form>
+                                {% elif token.status == 'SKIPPED' %}
+                                <button class="action-btn btn-recall" onclick="actionClicked('Recall')">Recall</button>
+                                {% endif %}
                             </td>
-                            <td><span class="dept-badge">Cardiology</span></td>
-                            <td><div class="status-pill status-waiting"><div class="status-dot"></div> Waiting</div></td>
-                            <td class="time-text">11:15 AM</td>
-                            <td><button class="action-btn btn-call" onclick="actionClicked('Call Patient')">Call<br>Patient</button></td>
                         </tr>
-
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-light)">No patient tokens registered today.</td>
+                        </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
 
             <div class="board-footer">
-                Total: <strong>7</strong> of <strong>7</strong> patient tokens listed
+                Total: <strong>{{ total_count }}</strong> of <strong>{{ total_count }}</strong> patient tokens listed
             </div>
         </div>
 

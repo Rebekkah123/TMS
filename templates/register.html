@@ -187,36 +187,42 @@
                 <p>Please complete your medical profile to proceed.</p>
             </div>
 
-            <form action="#" method="POST" onsubmit="event.preventDefault();">
+            {% if error %}
+            <div style="background-color:#ffe4e6; border:1px solid #fecdd3; color:#e11d48; padding:0.75rem; border-radius:4px; font-size:0.875rem; margin-bottom:1.5rem; text-align:center;">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form action="{% url 'register' %}" method="POST">
+                {% csrf_token %}
                 <div class="form-group">
                     <label for="fullName">Full Name</label>
-                    <input type="text" id="fullName" class="form-control" placeholder="e.g. Dr. Jane Doe or Nurse Smith" required>
+                    <input type="text" id="fullName" name="full_name" class="form-control" placeholder="e.g. Dr. Jane Doe or Nurse Smith" required>
                 </div>
 
                 <div class="form-group">
                     <label for="email">Professional Email</label>
-                    <input type="email" id="email" class="form-control" placeholder="jane.doe@hospital.com" required>
+                    <input type="email" id="email" name="email" class="form-control" placeholder="jane.doe@hospital.com" required>
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
                     <span class="form-text">Min 8 chars, mixed case, numbers, special characters.</span>
                 </div>
                 
                 <div class="form-group">
                     <label for="role">Role</label>
-                    <select id="role" class="form-control" required>
+                    <select id="role" name="role" class="form-control" required>
                         <option value="" disabled selected>Select Role</option>
                         <option value="doctor">Doctor</option>
                         <option value="nurse">Nurse</option>
-                        <option value="admin">Administrator</option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label for="department">Department / Specialization</label>
-                    <select id="department" class="form-control" required>
+                    <select id="department" name="department" class="form-control" required>
                         <option value="" disabled selected>Select Department</option>
                         <option value="cardiology">Cardiology</option>
                         <option value="neurology">Neurology</option>
@@ -229,11 +235,11 @@
 
                 <div class="form-group">
                     <label for="license">License / Registration Number</label>
-                    <input type="text" id="license" class="form-control" placeholder="e.g. MED123456" required>
+                    <input type="text" id="license" name="license" class="form-control" placeholder="e.g. MED123456" required>
                 </div>
 
                 <button type="submit" class="btn btn-primary">Register</button>
-                <button type="button" class="btn btn-outline">Cancel</button>
+                <button type="button" class="btn btn-outline" onclick="window.location.href='{% url 'login' %}'">Cancel</button>
             </form>
         </div>
     </main>
