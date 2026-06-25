@@ -578,6 +578,11 @@
 
                 <form method="POST" action="{% url 'nurse_dashboard' %}">
                     {% csrf_token %}
+                    {% if error %}
+                    <div style="background-color: var(--danger-red); color: white; padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.85rem; font-weight: 600;">
+                        <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+                    </div>
+                    {% endif %}
                     <div class="form-group">
                         <label>Full Name</label>
                         <input type="text" name="full_name" class="form-control" placeholder="e.g. John Doe" required>
@@ -608,11 +613,9 @@
                         <label>Doctor</label>
                         <select name="doctor_name" class="form-control" required>
                             <option value="">-- Select Doctor --</option>
-                            <option>Dr. James Mercer</option>
-                            <option>Dr. Clara Vance</option>
-                            <option>Dr. Helen Vance</option>
-                            <option>Dr. Sarah Patel</option>
-                            <option>Dr. Amanda Ross</option>
+                            {% for doctor in doctors %}
+                            <option value="{{ doctor.user.first_name|default:doctor.user.username }}">{{ doctor.user.first_name|default:doctor.user.username }}</option>
+                            {% endfor %}
                         </select>
                     </div>
 

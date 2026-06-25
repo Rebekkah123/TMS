@@ -95,3 +95,14 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.username} ({self.role})"
+
+class CompletedAppointment(models.Model):
+    token_number = models.CharField(max_length=50)
+    patient_name = models.CharField(max_length=255)
+    doctor_name = models.CharField(max_length=255, blank=True, null=True)
+    date = models.DateField(auto_now_add=True)
+    time = models.TimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.token_number} - {self.patient_name}"
+

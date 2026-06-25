@@ -106,6 +106,29 @@ def nurse_dashboard(request):
         department = request.POST.get('department')
         doctor_name = request.POST.get('doctor_name')
 
+        from .models import CompletedAppointment
+        today = timezone.localdate()
+        total_tokens_today = QueueToken.objects.filter(created_at__date=today).count()
+        total_tokens_today += CompletedAppointment.objects.filter(date=today).count()
+
+        if total_tokens_today >= 1000:
+            tokens = QueueToken.objects.all().order_by('id')
+            doctors = UserProfile.objects.filter(role='doctor').select_related('user')
+            waiting_count = QueueToken.objects.filter(status__in=['WAITING', 'NEAR_TURN']).count()
+            called_count = QueueToken.objects.filter(status='CALLED').count()
+            total_count = tokens.count()
+            now_serving = QueueToken.objects.filter(status='CALLED').order_by('-called_at').first()
+            context = {
+                'tokens': tokens,
+                'waiting_count': waiting_count,
+                'called_count': called_count,
+                'total_count': total_count,
+                'now_serving': now_serving,
+                'doctors': doctors,
+                'error': 'Daily appointment limit of 1000 reached.'
+            }
+            return render(request, 'nurse_dashboard.html', context)
+
         # Determine sequential token number — resets daily per doctor
         today = timezone.localdate()
         max_num = QueueToken.objects.filter(
@@ -132,6 +155,7 @@ def nurse_dashboard(request):
 
     # GET request
     tokens = QueueToken.objects.all().order_by('id')
+    doctors = UserProfile.objects.filter(role='doctor').select_related('user')
 
     # Calculate statistics (active queue only — completed records are deleted)
     waiting_count = QueueToken.objects.filter(status__in=['WAITING', 'NEAR_TURN']).count()
@@ -147,6 +171,7 @@ def nurse_dashboard(request):
         'called_count': called_count,
         'total_count': total_count,
         'now_serving': now_serving,
+        'doctors': doctors,
     }
     return render(request, 'nurse_dashboard.html', context)
 
@@ -263,8 +288,13 @@ def complete_trip(request, token_id):
         return redirect_dashboard_by_role(request.user)
         
     if request.method == 'POST':
-        # Permanently delete the record — no historical data is retained
         token = get_object_or_404(QueueToken, id=token_id)
+        from .models import CompletedAppointment
+        CompletedAppointment.objects.create(
+            token_number=token.formatted_token,
+            patient_name=token.full_name,
+            doctor_name=token.doctor_name
+        )
         token.delete()
 
     return redirect('nurse_dashboard')
