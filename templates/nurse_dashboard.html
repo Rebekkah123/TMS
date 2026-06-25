@@ -524,8 +524,8 @@
         <div class="header-center">
             <i class="fa-regular fa-calendar"></i>
             <div>
-                <div>Monday, June 22, 2026</div>
-                <div class="header-time"><i class="fa-regular fa-clock"></i> 02:07:50 PM</div>
+                <div id="live-date"></div>
+                <div class="header-time"><i class="fa-regular fa-clock"></i> <span id="live-time"></span></div>
             </div>
         </div>
 
@@ -564,9 +564,9 @@
                     <div class="stat-sub">{% if now_serving %}{{ now_serving.doctor_name }}{% else %}No patient currently{% endif %}</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-title">Completed</div>
-                    <div class="stat-value green">{{ completed_count }}</div>
-                    <div class="stat-sub" style="color:var(--success-green)">Finished today</div>
+                    <div class="stat-title">Called</div>
+                    <div class="stat-value green">{{ called_count }}</div>
+                    <div class="stat-sub" style="color:var(--success-green)">In consultation</div>
                 </div>
             </div>
 
@@ -638,13 +638,21 @@
                 <div class="filters-row">
                     <div class="search-wrapper">
                         <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" placeholder="Search patient, token, or phone...">
+                        <input type="text" id="searchInput" placeholder="Search patient, token, or phone..." oninput="applyFilters()">
                     </div>
-                    <select class="filter-select">
-                        <option><i class="fa-solid fa-filter"></i> All Consultants (All Doctors)</option>
+                    <select class="filter-select" id="doctorFilter" onchange="applyFilters()">
+                        <option value="">All Consultants</option>
+                        {% for token in tokens %}
+                        <option value="{{ token.doctor_name }}">{{ token.doctor_name }}</option>
+                        {% endfor %}
                     </select>
-                    <select class="filter-select">
-                        <option><i class="fa-solid fa-filter"></i> All Token Statuses</option>
+                    <select class="filter-select" id="statusFilter" onchange="applyFilters()">
+                        <option value="">All Token Statuses</option>
+                        <option value="WAITING">Waiting</option>
+                        <option value="NEAR_TURN">Near Turn</option>
+                        <option value="CALLED">Called</option>
+
+                        <option value="SKIPPED">Skipped</option>
                     </select>
                 </div>
             </div>
@@ -663,15 +671,22 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="tokenTableBody">
                         {% for token in tokens %}
-                        <tr>
+                        <tr
+                            data-name="{{ token.full_name|lower }}"
+                            data-token="{{ token.formatted_token|lower }}"
+                            data-phone="{{ token.mobile_number|lower }}"
+                            data-email="{{ token.email|lower }}"
+                            data-doctor="{{ token.doctor_name }}"
+                            data-status="{{ token.status }}"
+                        >
                             <td><div class="token-box">{{ token.token_prefix }}<br>{{ token.token_number }}</div></td>
-                            <td><div class="patient-name">{{ token.patient.full_name }}</div></td>
+                            <td><div class="patient-name">{{ token.full_name }}</div></td>
                             <td class="td-contact">
-                                {{ token.patient.mobile_number }}
-                                {% if token.patient.email %}
-                                <br>{{ token.patient.email }}
+                                {{ token.mobile_number }}
+                                {% if token.email %}
+                                <br>{{ token.email }}
                                 {% endif %}
                             </td>
                             <td>
@@ -686,17 +701,13 @@
                                 <div class="status-pill status-near"><div class="status-dot"></div> Near Turn</div>
                                 {% elif token.status == 'CALLED' %}
                                 <div class="status-pill status-called"><div class="status-dot"></div> Called</div>
-                                {% elif token.status == 'COMPLETED' %}
-                                <div class="status-pill status-completed"><div class="status-dot"></div> Completed</div>
                                 {% elif token.status == 'SKIPPED' %}
                                 <div class="status-pill status-skipped"><div class="status-dot"></div> Skipped</div>
                                 {% endif %}
                             </td>
                             <td class="time-text">{{ token.created_at|date:"h:i A" }}</td>
                             <td>
-                                {% if token.status == 'COMPLETED' %}
-                                <button class="action-btn btn-reopen" onclick="actionClicked('Re-open')">Re-open</button>
-                                {% elif token.status == 'WAITING' or token.status == 'NEAR_TURN' %}
+                                {% if token.status == 'WAITING' or token.status == 'NEAR_TURN' %}
                                 <form method="POST" action="{% url 'call_patient' token.id %}" style="display: inline;">
                                     {% csrf_token %}
                                     <button type="submit" class="action-btn btn-call">Call<br>Patient</button>
@@ -712,7 +723,7 @@
                             </td>
                         </tr>
                         {% empty %}
-                        <tr>
+                        <tr id="emptyRow">
                             <td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-light)">No patient tokens registered today.</td>
                         </tr>
                         {% endfor %}
@@ -721,7 +732,7 @@
             </div>
 
             <div class="board-footer">
-                Total: <strong>{{ total_count }}</strong> of <strong>{{ total_count }}</strong> patient tokens listed
+                Showing: <strong id="visibleCount">{{ total_count }}</strong> of <strong>{{ total_count }}</strong> patient tokens
             </div>
         </div>
 
@@ -729,11 +740,77 @@
 
     <!-- Frontend Logic -->
     <script>
-        function handleRegistration(e) {
-            e.preventDefault();
-            alert("Token Generated! Form details would be sent to the backend.");
-            e.target.reset();
+        // Live IST clock
+        function updateClock() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            const timeStr = now.toLocaleTimeString('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            }).toUpperCase();
+            document.getElementById('live-date').textContent = dateStr;
+            document.getElementById('live-time').textContent = timeStr;
         }
+        updateClock();
+        setInterval(updateClock, 1000);
+        function applyFilters() {
+            const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+            const doctorVal = document.getElementById('doctorFilter').value;
+            const statusVal  = document.getElementById('statusFilter').value;
+
+            const rows = document.querySelectorAll('#tokenTableBody tr[data-name]');
+            let visible = 0;
+
+            rows.forEach(row => {
+                const name    = row.dataset.name  || '';
+                const token   = row.dataset.token || '';
+                const phone   = row.dataset.phone || '';
+                const email   = row.dataset.email || '';
+                const doctor  = row.dataset.doctor || '';
+                const status  = row.dataset.status || '';
+
+                const matchesSearch = !searchVal ||
+                    name.includes(searchVal) ||
+                    token.includes(searchVal) ||
+                    phone.includes(searchVal) ||
+                    email.includes(searchVal);
+
+                const matchesDoctor = !doctorVal || doctor === doctorVal;
+                const matchesStatus = !statusVal  || status === statusVal;
+
+                if (matchesSearch && matchesDoctor && matchesStatus) {
+                    row.style.display = '';
+                    visible++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            document.getElementById('visibleCount').textContent = visible;
+        }
+
+        // De-duplicate doctor dropdown options on page load
+        (function deduplicateDoctors() {
+            const sel = document.getElementById('doctorFilter');
+            const seen = new Set();
+            Array.from(sel.options).forEach(opt => {
+                if (!opt.value) return; // keep the "All" placeholder
+                if (seen.has(opt.value)) {
+                    opt.remove();
+                } else {
+                    seen.add(opt.value);
+                }
+            });
+        })();
 
         function exportData() {
             alert("Exporting CSV Report...");

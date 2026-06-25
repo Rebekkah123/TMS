@@ -714,6 +714,7 @@
         }
 
         .input-group input, .input-group select, .input-group textarea {
+            width: 100%;
             padding: 0.6rem;
             border: 1px solid var(--border-color);
             border-radius: 6px;
@@ -813,7 +814,7 @@
                     <span><i class="fa-regular fa-circle-check"></i> Completed</span>
                     <span class="badge-small badge-green">RELEASED</span>
                 </div>
-                <div class="stat-value">{{ completed_count }} <span class="stat-unit">Cases</span></div>
+                <div class="stat-value">N/A <span class="stat-unit">Cases</span></div>
                 <div class="stat-progress"><div class="progress-bar prog-green"></div></div>
             </div>
             <div class="stat-card">
@@ -827,9 +828,9 @@
             <div class="stat-card">
                 <div class="stat-header">
                     <span><i class="fa-regular fa-clock"></i> Avg Wait Time</span>
-                    <span class="badge-small badge-green" style="background:#dcfce7;">↘ -12%</span>
+                    <span class="badge-small badge-green" style="background:#dcfce7;">LIVE</span>
                 </div>
-                <div class="stat-value">{{ avg_wait_mins }} <span class="stat-unit">Mins</span></div>
+                <div class="stat-value">N/A <span class="stat-unit">Mins</span></div>
                 <div class="stat-progress"><div class="progress-bar prog-purple"></div></div>
             </div>
         </div>
@@ -855,8 +856,8 @@
                         <span>Normal / Standard</span>
                         <span class="token">Token #{% if current_token %}{{ current_token.token_number }}{% else %}--{% endif %}</span>
                     </div>
-                    <div class="patient-name-large">{% if current_token %}{{ current_token.patient.full_name }}{% else %}No active patient{% endif %}</div>
-                    <div class="patient-demographics">{% if current_token %}{{ current_token.patient.mobile_number }} • Inflow {{ current_token.created_at|date:"h:i A" }}{% endif %}</div>
+                    <div class="patient-name-large">{% if current_token %}{{ current_token.full_name }}{% else %}No active patient{% endif %}</div>
+                    <div class="patient-demographics">{% if current_token %}{{ current_token.mobile_number }} • Inflow {{ current_token.created_at|date:"h:i A" }}{% endif %}</div>
                     
                     <div class="chief-diagnosis-label">Chief Diagnosis / Discomfort</div>
                     <div class="chief-diagnosis">{% if current_token %}{{ current_token.department }}{% else %}No active diagnosis{% endif %}</div>
@@ -896,21 +897,21 @@
                 <div class="queue-tabs">
                     <button class="tab-btn active" onclick="switchTab(this)">ALL ({{ total_count }})</button>
                     <button class="tab-btn" onclick="switchTab(this)">WAIT ({{ waiting_count }})</button>
-                    <button class="tab-btn" onclick="switchTab(this)">DONE ({{ completed_count }})</button>
+                    <button class="tab-btn" onclick="switchTab(this)">DONE (0)</button>
                     <button class="tab-btn" onclick="switchTab(this)">SKIP ({{ skipped_count }})</button>
                 </div>
 
                 <div class="queue-list">
                     {% for token in tokens %}
-                    <div class="patient-row {% if token.status == 'COMPLETED' or token.status == 'SKIPPED' %}faded{% endif %}">
+                    <div class="patient-row {% if token.status == 'SKIPPED' %}faded{% endif %}">
                         <div class="token-circle">
                             <span>{{ token.token_prefix }}</span>
                             <strong>{{ token.token_number }}</strong>
                         </div>
                         <div class="patient-row-details">
                             <div class="patient-row-header">
-                                <span class="patient-row-name">{{ token.patient.full_name }}</span>
-                                <span class="patient-row-demo">({{ token.patient.mobile_number }})</span>
+                                <span class="patient-row-name">{{ token.full_name }}</span>
+                                <span class="patient-row-demo">({{ token.mobile_number }})</span>
                                 <span class="tag tag-normal">NORMAL</span>
                             </div>
                             <div class="patient-row-diagnosis">
@@ -919,10 +920,10 @@
                             <div class="patient-row-meta">
                                 <span>CHECK-IN: {{ token.created_at|date:"h:i A" }}</span>
                                 <span>CALLED: <span class="meta-value">{% if token.called_at %}{{ token.called_at|date:"h:i A" }}{% else %}--{% endif %}</span></span>
-                                <span>PERIOD: <span class="meta-value green">{% if token.completed_at %}{{ token.wait_duration_minutes }}M{% else %}--{% endif %}</span></span>
+                                <span>WAIT: <span class="meta-value green">{{ token.wait_duration_minutes }}M</span></span>
                             </div>
                         </div>
-                        <div class="patient-status {% if token.status == 'COMPLETED' %}status-completed{% elif token.status == 'WAITING' %}status-waiting{% elif token.status == 'NEAR_TURN' %}status-near{% elif token.status == 'CALLED' %}status-called{% else %}status-skipped{% endif %}">
+                        <div class="patient-status {% if token.status == 'WAITING' %}status-waiting{% elif token.status == 'NEAR_TURN' %}status-near{% elif token.status == 'CALLED' %}status-called{% else %}status-skipped{% endif %}">
                             {{ token.status }}
                         </div>
                     </div>

@@ -4,13 +4,14 @@ from django.utils import timezone
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
-from .models import Patient, Token, UserProfile
+from .models import QueueToken, UserProfile
 from .services import (
     send_queue_started_notification,
     send_milestone_notification,
     send_near_turn_notification,
     send_countdown_notification,
-    send_final_call_notification
+    send_final_call_notification,
+    send_registration_notification
 )
 
 def redirect_dashboard_by_role(user):
@@ -83,6 +84,11 @@ def login_user(request):
             
     return render(request, 'login.html')
 
+def landing_page(request):
+    if request.user.is_authenticated:
+        return redirect_dashboard_by_role(request.user)
+    return render(request, 'landing.html')
+
 def logout_user(request):
     logout(request)
     return redirect('login')
@@ -99,48 +105,51 @@ def nurse_dashboard(request):
         email = request.POST.get('email') or None
         department = request.POST.get('department')
         doctor_name = request.POST.get('doctor_name')
-        
-        # Always create a new Patient record on form submission
-        patient = Patient.objects.create(full_name=full_name, mobile_number=mobile_number, email=email)
-            
-        # Determine sequential token number starting at 1 for the selected doctor
-        max_num = Token.objects.filter(doctor_name=doctor_name).aggregate(Max('token_number'))['token_number__max']
+
+        # Determine sequential token number — resets daily per doctor
+        today = timezone.localdate()
+        max_num = QueueToken.objects.filter(
+            doctor_name=doctor_name,
+            created_at__date=today
+        ).aggregate(Max('token_number'))['token_number__max']
         next_token_number = (max_num or 0) + 1
-        
-        # Enqueue new token
-        Token.objects.create(
+
+        # Create a single unified QueueToken record
+        token = QueueToken.objects.create(
             token_number=next_token_number,
-            patient=patient,
+            full_name=full_name,
+            mobile_number=mobile_number,
+            email=email,
             department=department,
             doctor_name=doctor_name,
             status='WAITING'
         )
+
+        # Send registration confirmation email if patient has an email address
+        send_registration_notification(token)
+
         return redirect('nurse_dashboard')
 
     # GET request
-    tokens = Token.objects.all().order_by('id')
-    
-    # Calculate statistics
-    waiting_count = Token.objects.filter(status__in=['WAITING', 'NEAR_TURN']).count()
-    called_count = Token.objects.filter(status='CALLED').count()
-    completed_count = Token.objects.filter(status='COMPLETED').count()
+    tokens = QueueToken.objects.all().order_by('id')
+
+    # Calculate statistics (active queue only — completed records are deleted)
+    waiting_count = QueueToken.objects.filter(status__in=['WAITING', 'NEAR_TURN']).count()
+    called_count = QueueToken.objects.filter(status='CALLED').count()
     total_count = tokens.count()
-    
+
     # Now serving token details
-    now_serving = Token.objects.filter(status='CALLED').order_by('-called_at').first()
+    now_serving = QueueToken.objects.filter(status='CALLED').order_by('-called_at').first()
 
     context = {
         'tokens': tokens,
         'waiting_count': waiting_count,
         'called_count': called_count,
-        'completed_count': completed_count,
         'total_count': total_count,
         'now_serving': now_serving,
     }
     return render(request, 'nurse_dashboard.html', context)
 
-from django.shortcuts import get_object_or_404
-from django.utils import timezone
 
 @login_required(login_url='login')
 def call_patient(request, token_id):
@@ -149,28 +158,29 @@ def call_patient(request, token_id):
         
     if request.method == 'POST':
         # Retrieve the token first to get doctor details
-        token = get_object_or_404(Token, id=token_id)
+        token = get_object_or_404(QueueToken, id=token_id)
         doctor_name = token.doctor_name
 
-        # Check if this will be the first token called for this doctor (no previously called or completed tokens exist for this doctor)
-        already_called_count = Token.objects.filter(
-            status__in=['CALLED', 'COMPLETED'],
+        # Check if this will be the first token called for this doctor today
+        # (no previously called tokens exist for this doctor in the active queue)
+        already_called_count = QueueToken.objects.filter(
+            status='CALLED',
             doctor_name=doctor_name
         ).exclude(id=token_id).count()
         is_first_call = (already_called_count == 0)
-        
+
         # Call the chosen token
         token.status = 'CALLED'
         token.called_at = timezone.now()
         token.save()
-        
+
         C = token.token_number
-        
+
         # Trigger Queue Started if this is the first token call for this doctor
         if is_first_call:
             print("QUEUE STARTED notification triggered")
             send_queue_started_notification(doctor_name)
-            
+
         # Trigger Final Call for the called patient
         print("FINAL CALL notification triggered")
         send_final_call_notification(token)
@@ -182,32 +192,32 @@ def call_patient(request, token_id):
 
         # Scan and update remaining waiting tokens for this doctor only
         from .models import NotificationLog
-        waiting_tokens = Token.objects.filter(
+        waiting_tokens = QueueToken.objects.filter(
             status__in=['WAITING', 'NEAR_TURN'],
             doctor_name=doctor_name
         ).order_by('token_number')
         for wt in waiting_tokens:
             diff = wt.token_number - C
-            
+
             # Map status badge for NEAR_TURN
             if diff <= 5:
                 if wt.status == 'WAITING':
                     wt.status = 'NEAR_TURN'
                     wt.save()
-            
+
             # Trigger Near Turn at exactly 5 separation
             if diff == 5:
                 if not NotificationLog.objects.filter(token=wt, notification_type='Near Turn').exists():
                     print("NEAR TURN notification triggered")
                     send_near_turn_notification(wt)
-            
+
             # Trigger Countdown at exactly 3, 2, or 1 separation
             elif diff in [1, 2, 3]:
                 log_type = f'Countdown {diff}'
                 if not NotificationLog.objects.filter(token=wt, notification_type=log_type).exists():
                     print(f"COUNTDOWN {diff} notification triggered")
                     send_countdown_notification(wt, diff)
-        
+
     return redirect('nurse_dashboard')
 
 @login_required(login_url='login')
@@ -218,41 +228,29 @@ def doctor_dashboard(request):
     # Filter tokens belonging to the logged-in doctor
     doctor_name_query = request.user.first_name or request.user.username
     cleaned_name = doctor_name_query.replace("Dr. ", "").replace("Dr ", "").strip()
-    
+
     from django.db.models import Q
-    tokens = Token.objects.filter(
+    tokens = QueueToken.objects.filter(
         Q(doctor_name__icontains=cleaned_name) |
         Q(doctor_name__icontains=doctor_name_query)
     ).order_by('token_number')
-    
-    # Calculate statistics using only this doctor's tokens
+
+    # Statistics — active queue only (no completed records remain in DB)
     waiting_count = tokens.filter(status__in=['WAITING', 'NEAR_TURN']).count()
-    completed_count = tokens.filter(status='COMPLETED').count()
     skipped_count = tokens.filter(status='SKIPPED').count()
     total_count = tokens.count()
-    
-    # Calculate average wait time (in minutes) for completed cases
-    completed_tokens = tokens.filter(status='COMPLETED', completed_at__isnull=False)
-    completed_list = list(completed_tokens)
-    if completed_list:
-        total_wait = sum((t.completed_at - t.created_at).total_seconds() for t in completed_list)
-        avg_wait_mins = int(total_wait / (60 * len(completed_list)))
-    else:
-        avg_wait_mins = 0
- 
+
     # Live active session token for this doctor
     current_token = tokens.filter(status='CALLED').order_by('-called_at').first()
-    
+
     # Next token for this doctor
     next_token = tokens.filter(status='WAITING').order_by('token_number').first()
-    
+
     context = {
         'tokens': tokens,
         'waiting_count': waiting_count,
-        'completed_count': completed_count,
         'skipped_count': skipped_count,
         'total_count': total_count,
-        'avg_wait_mins': avg_wait_mins,
         'current_token': current_token,
         'next_token': next_token,
     }
@@ -265,9 +263,8 @@ def complete_trip(request, token_id):
         return redirect_dashboard_by_role(request.user)
         
     if request.method == 'POST':
-        token = get_object_or_404(Token, id=token_id)
-        token.status = 'COMPLETED'
-        token.completed_at = timezone.now()
-        token.save()
-        
+        # Permanently delete the record — no historical data is retained
+        token = get_object_or_404(QueueToken, id=token_id)
+        token.delete()
+
     return redirect('nurse_dashboard')
