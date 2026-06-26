@@ -106,6 +106,46 @@ def nurse_dashboard(request):
         department = request.POST.get('department')
         doctor_name = request.POST.get('doctor_name')
 
+        # Validate that the selected doctor belongs to the selected department
+        from django.db.models import Q
+        # Define department normalization mapping to support different DB values
+        dept_normalization = {
+            'General Medicine': ['General Medicine', 'general'],
+            'Cardiology': ['Cardiology', 'cardiology'],
+            'Neurology': ['Neurology', 'neurology'],
+            'Pediatrics': ['Pediatrics', 'pediatrics'],
+            'Orthopedics': ['Orthopedics', 'orthopedics'],
+            'Dermatology': ['Dermatology', 'dermatology'],
+            'Emergency': ['Emergency', 'emergency'],
+            'Surgery': ['Surgery', 'surgery'],
+        }
+        allowed_depts = dept_normalization.get(department, [department])
+
+        doctor_profile = UserProfile.objects.filter(
+            role='doctor',
+            department__in=allowed_depts
+        ).filter(
+            Q(user__first_name=doctor_name) | Q(user__username=doctor_name)
+        ).first()
+
+        if not doctor_profile:
+            tokens = QueueToken.objects.all().order_by('id')
+            doctors = UserProfile.objects.filter(role='doctor').select_related('user')
+            waiting_count = QueueToken.objects.filter(status__in=['WAITING', 'NEAR_TURN']).count()
+            called_count = QueueToken.objects.filter(status='CALLED').count()
+            total_count = tokens.count()
+            now_serving = QueueToken.objects.filter(status='CALLED').order_by('-called_at').first()
+            context = {
+                'tokens': tokens,
+                'waiting_count': waiting_count,
+                'called_count': called_count,
+                'total_count': total_count,
+                'now_serving': now_serving,
+                'doctors': doctors,
+                'error': 'The selected doctor does not belong to the selected department.'
+            }
+            return render(request, 'nurse_dashboard.html', context)
+
         from .models import CompletedAppointment
         today = timezone.localdate()
         total_tokens_today = QueueToken.objects.filter(created_at__date=today).count()
@@ -186,13 +226,8 @@ def call_patient(request, token_id):
         token = get_object_or_404(QueueToken, id=token_id)
         doctor_name = token.doctor_name
 
-        # Check if this will be the first token called for this doctor today
-        # (no previously called tokens exist for this doctor in the active queue)
-        already_called_count = QueueToken.objects.filter(
-            status='CALLED',
-            doctor_name=doctor_name
-        ).exclude(id=token_id).count()
-        is_first_call = (already_called_count == 0)
+        # Send Queue Started only once, when Token Number 1 is called for the first time
+        is_first_call = (token.token_number == 1 and token.status != 'CALLED')
 
         # Call the chosen token
         token.status = 'CALLED'

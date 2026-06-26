@@ -612,10 +612,7 @@
                     <div class="form-group">
                         <label>Doctor</label>
                         <select name="doctor_name" class="form-control" required>
-                            <option value="">-- Select Doctor --</option>
-                            {% for doctor in doctors %}
-                            <option value="{{ doctor.user.first_name|default:doctor.user.username }}">{{ doctor.user.first_name|default:doctor.user.username }}</option>
-                            {% endfor %}
+                            <option value="">Select Department First</option>
                         </select>
                     </div>
 
@@ -743,6 +740,73 @@
 
     <!-- Frontend Logic -->
     <script>
+        // Dynamic Doctor/Department filtering
+        document.addEventListener('DOMContentLoaded', function() {
+            const deptSelect = document.querySelector('select[name="department"]');
+            const doctorSelect = document.querySelector('select[name="doctor_name"]');
+
+            const deptMapping = {
+                'general': 'General Medicine',
+                'cardiology': 'Cardiology',
+                'neurology': 'Neurology',
+                'pediatrics': 'Pediatrics',
+                'emergency': 'Emergency',
+                'surgery': 'Surgery',
+                'orthopedics': 'Orthopedics',
+                'dermatology': 'Dermatology'
+            };
+
+            const doctorsByDept = {};
+            {% for doctor in doctors %}
+                {% if doctor.department %}
+                {
+                    const rawDept = "{{ doctor.department|escapejs }}";
+                    const mappedDept = deptMapping[rawDept] || rawDept;
+                    if (!doctorsByDept[mappedDept]) {
+                        doctorsByDept[mappedDept] = [];
+                    }
+                    doctorsByDept[mappedDept].push("{{ doctor.user.first_name|default:doctor.user.username|escapejs }}");
+                }
+                {% endif %}
+            {% endfor %}
+
+            function updateDoctors() {
+                const selectedDept = deptSelect.value;
+                doctorSelect.innerHTML = '';
+
+                if (!selectedDept) {
+                    const opt = document.createElement('option');
+                    opt.value = '';
+                    opt.textContent = 'Select Department First';
+                    doctorSelect.appendChild(opt);
+                    return;
+                }
+
+                const doctors = doctorsByDept[selectedDept] || [];
+                if (doctors.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.value = '';
+                    opt.textContent = 'No doctors available';
+                    doctorSelect.appendChild(opt);
+                } else {
+                    const placeholderOpt = document.createElement('option');
+                    placeholderOpt.value = '';
+                    placeholderOpt.textContent = '-- Select Doctor --';
+                    doctorSelect.appendChild(placeholderOpt);
+
+                    doctors.forEach(doc => {
+                        const opt = document.createElement('option');
+                        opt.value = doc;
+                        opt.textContent = doc;
+                        doctorSelect.appendChild(opt);
+                    });
+                }
+            }
+
+            deptSelect.addEventListener('change', updateDoctors);
+            updateDoctors();
+        });
+
         // Live IST clock
         function updateClock() {
             const now = new Date();
