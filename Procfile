@@ -1,3 +1,2 @@
-release: python manage.py migrate
-web: gunicorn TMS.wsgi:application
+web: python manage.py migrate && gunicorn TMS.wsgi:application
 
