@@ -32,10 +32,16 @@ if os.getenv('SECRET_KEY'):
 # Database configuration: parse DATABASE_URL if provided
 db_url = os.getenv('DATABASE_URL')
 if db_url:
-    DATABASES['default'] = dj_database_url.config(
+    # Print a safe debugging message during startup
+    print(f"DATABASE_URL is set (length: {len(db_url)}). Parsing with dj-database-url...")
+    DATABASES['default'] = dj_database_url.parse(
+        db_url,
         conn_max_age=600,
         conn_health_checks=True,
     )
+else:
+    print("WARNING: DATABASE_URL environment variable is NOT set! Django is falling back to localhost.")
+
 
 # Static files and middleware for serving static assets via WhiteNoise
 if 'whitenoise.middleware.WhiteNoiseMiddleware' not in MIDDLEWARE:
