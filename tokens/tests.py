@@ -92,10 +92,8 @@ class QueueStartedNotificationTests(TestCase):
         # We expect:
         # - 1 Final Call for Helen Patient 1
         # - 2 Queue Started for Helen Patient 2 and 3
-        # - 1 Countdown 1 for Helen Patient 2
-        # - 1 Countdown 2 for Helen Patient 3
-        # (Total 5 emails)
-        self.assertEqual(len(emails_sent), 5)
+        # (Total 3 emails)
+        self.assertEqual(len(emails_sent), 3)
         
         # Check that Queue Started was sent to helen_p2 and helen_p3
         queue_started_recipients = [m.to[0] for m in emails_sent if "Queue Started" in m.subject]
@@ -136,7 +134,7 @@ class QueueStartedNotificationTests(TestCase):
         response = self.client.post(reverse('call_patient', args=[self.hel2.id]))
         self.assertEqual(response.status_code, 302)
         
-        # Verify emails: only Final Call for hel2 and countdown for hel3, no Queue Started
+        # Verify emails: only Final Call for hel2, no Queue Started
         emails_sent = mail.outbox
         queue_started_emails = [m for m in emails_sent if "Queue Started" in m.subject]
         self.assertEqual(len(queue_started_emails), 0)

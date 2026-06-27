@@ -9,7 +9,6 @@ from .services import (
     send_queue_started_notification,
     send_milestone_notification,
     send_near_turn_notification,
-    send_countdown_notification,
     send_final_call_notification,
     send_registration_notification
 )
@@ -265,18 +264,10 @@ def call_patient(request, token_id):
                     wt.status = 'NEAR_TURN'
                     wt.save()
 
-            # Trigger Near Turn at exactly 5 separation
             if diff == 5:
                 if not NotificationLog.objects.filter(token=wt, notification_type='Near Turn').exists():
                     print("NEAR TURN notification triggered")
                     send_near_turn_notification(wt)
-
-            # Trigger Countdown at exactly 3, 2, or 1 separation
-            elif diff in [1, 2, 3]:
-                log_type = f'Countdown {diff}'
-                if not NotificationLog.objects.filter(token=wt, notification_type=log_type).exists():
-                    print(f"COUNTDOWN {diff} notification triggered")
-                    send_countdown_notification(wt, diff)
 
     return redirect('nurse_dashboard')
 
