@@ -9,6 +9,22 @@ DEBUG = False
 # Load ALLOWED_HOSTS from env (split by commas) or default to any host in Railway
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 
+# CSRF Trusted Origins (required for POST requests over HTTPS)
+CSRF_TRUSTED_ORIGINS = []
+csrf_origins = os.getenv('CSRF_TRUSTED_ORIGINS')
+if csrf_origins:
+    CSRF_TRUSTED_ORIGINS.extend(csrf_origins.split(','))
+
+# Auto-detect Railway generated domain for CSRF trust
+railway_static_url = os.getenv('RAILWAY_STATIC_URL')
+if railway_static_url:
+    if not railway_static_url.startswith('http'):
+        CSRF_TRUSTED_ORIGINS.append(f'https://{railway_static_url}')
+        CSRF_TRUSTED_ORIGINS.append(f'http://{railway_static_url}')
+    else:
+        CSRF_TRUSTED_ORIGINS.append(railway_static_url)
+
+
 # Secret key override (highly recommended to set this in Railway config)
 if os.getenv('SECRET_KEY'):
     SECRET_KEY = os.getenv('SECRET_KEY')
