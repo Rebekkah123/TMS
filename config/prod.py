@@ -62,6 +62,14 @@ STORAGES = {
     },
 }
 
+# Email configuration for production
+# If SMTP credentials are not configured, fall back to console backend
+# (emails are printed to Railway logs instead of crashing on SMTP connection)
+EMAIL_TIMEOUT = 10  # seconds – prevents SMTP hangs from killing the worker
+if not os.getenv('EMAIL_HOST_USER') or not os.getenv('EMAIL_HOST_PASSWORD'):
+    print("WARNING: EMAIL_HOST_USER / EMAIL_HOST_PASSWORD not set. Using console email backend.")
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
 # Production Logging: Output errors and warnings to console (stdout) for Railway logs
 LOGGING = {
     'version': 1,
