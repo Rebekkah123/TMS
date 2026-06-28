@@ -1021,7 +1021,22 @@
 
 
         function completeCase() {
-            alert('Case Completed! Ready for next patient.');
+            {% if current_token %}
+            if (confirm('Mark this case as completed?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "{% url 'complete_case_doctor' current_token.id %}";
+                const csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = 'csrfmiddlewaretoken';
+                csrf.value = '{{ csrf_token }}';
+                form.appendChild(csrf);
+                document.body.appendChild(form);
+                form.submit();
+            }
+            {% else %}
+            alert('No active patient to complete.');
+            {% endif %}
         }
 
         function fillTemplate(text) {

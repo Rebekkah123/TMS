@@ -29,4 +29,5 @@ urlpatterns = [
     path('nurse-dashboard/', views.nurse_dashboard, name='nurse_dashboard'),
     path('nurse-dashboard/call/<int:token_id>/', views.call_patient, name='call_patient'),
     path('nurse-dashboard/complete/<int:token_id>/', views.complete_trip, name='complete_trip'),
+    path('doctor-dashboard/complete/<int:token_id>/', views.complete_case_doctor, name='complete_case_doctor'),
 ]

@@ -298,7 +298,7 @@ def doctor_dashboard(request):
     current_token = tokens.filter(status='CALLED').order_by('-called_at').first()
 
     # Next token for this doctor
-    next_token = tokens.filter(status='WAITING').order_by('token_number').first()
+    next_token = tokens.filter(status__in=['WAITING', 'NEAR_TURN']).order_by('token_number').first()
 
     context = {
         'tokens': tokens,
@@ -327,3 +327,21 @@ def complete_trip(request, token_id):
         token.delete()
 
     return redirect('nurse_dashboard')
+
+
+@login_required(login_url='login')
+def complete_case_doctor(request, token_id):
+    if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.role == 'doctor')):
+        return redirect_dashboard_by_role(request.user)
+
+    if request.method == 'POST':
+        token = get_object_or_404(QueueToken, id=token_id)
+        from .models import CompletedAppointment
+        CompletedAppointment.objects.create(
+            token_number=token.formatted_token,
+            patient_name=token.full_name,
+            doctor_name=token.doctor_name
+        )
+        token.delete()
+
+    return redirect('doctor_dashboard')
