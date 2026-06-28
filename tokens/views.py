@@ -217,7 +217,7 @@ def nurse_dashboard(request):
 
 @login_required(login_url='login')
 def call_patient(request, token_id):
-    if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.role == 'nurse')):
+    if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.role in ('nurse', 'doctor'))):
         return redirect_dashboard_by_role(request.user)
         
     if request.method == 'POST':
@@ -269,6 +269,9 @@ def call_patient(request, token_id):
                     print("NEAR TURN notification triggered")
                     send_near_turn_notification(wt)
 
+    # Redirect back to the appropriate dashboard based on user role
+    if hasattr(request.user, 'profile') and request.user.profile.role == 'doctor':
+        return redirect('doctor_dashboard')
     return redirect('nurse_dashboard')
 
 @login_required(login_url='login')

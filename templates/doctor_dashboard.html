@@ -870,7 +870,14 @@
                 </div>
 
                 <div class="action-buttons-grid">
-                    <button class="btn-action btn-primary-action" onclick="nextToken()"><i class="fa-solid fa-arrow-right"></i> NEXT TOKEN</button>
+                    {% if next_token %}
+                    <form method="POST" action="{% url 'call_patient' next_token.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-action btn-primary-action"><i class="fa-solid fa-arrow-right"></i> NEXT TOKEN</button>
+                    </form>
+                    {% else %}
+                    <button class="btn-action btn-primary-action" disabled><i class="fa-solid fa-arrow-right"></i> NEXT TOKEN</button>
+                    {% endif %}
                     <button class="btn-action"><i class="fa-solid fa-rotate-right"></i> RECALL</button>
                     <button class="btn-action"><i class="fa-solid fa-forward-step"></i> SKIP</button>
                 </div>
@@ -1011,12 +1018,7 @@
             btn.classList.add('active');
         }
 
-        let token = 24;
-        function nextToken() {
-            token++;
-            document.getElementById('currentTokenDisplay').innerText = token;
-            document.querySelector('.next-preview strong').innerText = token + 1;
-        }
+
 
         function completeCase() {
             alert('Case Completed! Ready for next patient.');
