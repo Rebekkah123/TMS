@@ -632,7 +632,10 @@
                         <h2>Hospital Queue Board</h2>
                         <p>Live operation panel • Click headings to sort</p>
                     </div>
-                    <button class="btn-export" onclick="exportData()"><i class="fa-solid fa-download"></i> Export CSV Report</button>
+                    <form method="POST" action="{% url 'clear_queue' %}" style="display:inline;" onsubmit="return confirm('Are you sure you want to clear the queue for all doctors?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-export"><i class="fa-solid fa-trash-can"></i> Clear Queue</button>
+                    </form>
                 </div>
                 
                 <div class="filters-row">

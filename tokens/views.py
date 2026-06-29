@@ -345,3 +345,13 @@ def complete_case_doctor(request, token_id):
         token.delete()
 
     return redirect('doctor_dashboard')
+
+@login_required(login_url='login')
+def clear_queue(request):
+    if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.role == 'nurse')):
+        return redirect_dashboard_by_role(request.user)
+        
+    if request.method == 'POST':
+        QueueToken.objects.all().delete()
+        
+    return redirect('nurse_dashboard')
